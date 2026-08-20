@@ -1,0 +1,44 @@
+name: Anti-AI Slop
+
+on:
+  workflow_call:
+    inputs:
+      max-failures:
+        description: >-
+          Number of individual check failures required before failure actions
+          (close, lock, comment) trigger. Higher = fewer false positives.
+          Valid range 1-25. Matches the anti-slop action's own default.
+        type: number
+        default: 4
+      close-pr:
+        description: >-
+          Close the PR when max-failures is reached. Set false for a dry run:
+          all checks still report into the job summary, nothing gets closed.
+        type: boolean
+        default: true
+      failure-pr-message:
+        description: >-
+          Comment posted on the PR when it is closed. Empty means a closed
+          contributor gets no explanation — set something.
+        type: string
+        default: ""
+
+jobs:
+  anti-slop:
+    name: PR quality checks
+    runs-on: ubuntu-latest
+    # A called workflow can only NARROW the permissions its caller granted,
+    # never widen them. Declaring them here documents what this workflow
+    # needs and makes the run fail loudly if a caller forgets to grant them.
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: write
+    steps:
+      # Pinned to the v0.3.0 commit SHA: bumping it here updates every
+      # repository that calls this workflow.
+      - uses: peakoss/anti-slop@57858eead489d08b255fab2af45a506c2ca6eab2 # v0.3.0
+        with:
+          max-failures: ${{ inputs.max-failures }}
+          close-pr: ${{ inputs.close-pr }}
+          failure-pr-message: ${{ inputs.failure-pr-message }}
